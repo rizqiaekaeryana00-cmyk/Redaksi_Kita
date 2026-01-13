@@ -3,6 +3,12 @@ import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
 import { QuizQuestion, User, PlayerStats } from '../types';
 
+/**
+ * QUIZ VIEW
+ * Scoring: 10 points per correct answer
+ * Tracks: quizzes completed, correct answers, accuracy
+ */
+
 export const QuizView: React.FC<{ user: User; onExit: () => void }> = ({ user, onExit }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -18,7 +24,7 @@ export const QuizView: React.FC<{ user: User; onExit: () => void }> = ({ user, o
     const isCorrect = idx === questions[currentIdx].correctIndex;
     
     if (isCorrect) {
-        setScore(s => s + (100 / questions.length));
+        setScore(s => s + 10); // 10 points per correct answer
         setCorrectCount(c => c + 1);
         AudioService.playCorrect();
     } else {
@@ -31,7 +37,7 @@ export const QuizView: React.FC<{ user: User; onExit: () => void }> = ({ user, o
         setFinished(true);
         AudioService.playWin();
         // Save stats
-        saveStats(correctCount + (isCorrect ? 1 : 0), Math.round(score + (isCorrect ? 100 / questions.length : 0)));
+        saveStats(correctCount + (isCorrect ? 1 : 0), Math.round(score + (isCorrect ? 10 : 0)));
     }
   };
 

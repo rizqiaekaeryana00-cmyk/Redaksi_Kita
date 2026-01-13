@@ -3,6 +3,13 @@ import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
 import { NewsItem, User, PlayerStats } from '../types';
 
+/**
+ * HOAX BUSTER GAME
+ * Scoring: 10 points per hoax caught
+ * Duration: 60 seconds
+ * Lives: 3 (lose 1 if you shoot a real news)
+ */
+
 interface HoaxGameProps {
   user: User;
   onExit: () => void;
@@ -136,7 +143,7 @@ export const HoaxGameView: React.FC<HoaxGameProps> = ({ user, onExit }) => {
 
     if (target.news.type === 'hoax') {
       AudioService.playShoot();
-      setScore(s => s + 100);
+      setScore(s => s + 10); // 10 points per hoax caught
       setHoaxBustedCount(h => h + 1);
     } else {
       AudioService.playWrong();

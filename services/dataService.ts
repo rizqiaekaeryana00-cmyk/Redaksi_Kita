@@ -126,16 +126,41 @@ export const DataService = {
   },
 
   // --- LEADERBOARD SERVICES ---
-  savePlayerStats: async (stats: PlayerStats): Promise<void> => {
+  savePlayerStats: async (newStats: PlayerStats): Promise<void> => {
     try {
-      // Check for new achievements
-      const newAchievements = AchievementService.checkNewAchievements(stats);
-      if (newAchievements.length > 0) {
-        stats.achievements = [...stats.achievements, ...newAchievements];
+      // Get existing stats if available
+      const existingStats = await DataService.getPlayerStats(newStats.userId);
+      
+      let mergedStats: PlayerStats;
+      
+      if (existingStats) {
+        // MERGE: Accumulate stats instead of overwriting
+        mergedStats = {
+          ...existingStats,
+          totalScore: existingStats.totalScore + newStats.totalScore,
+          quizCompleted: existingStats.quizCompleted + newStats.quizCompleted,
+          quizCorrect: existingStats.quizCorrect + newStats.quizCorrect,
+          hoaxBusted: existingStats.hoaxBusted + newStats.hoaxBusted,
+          puzzlesCompleted: existingStats.puzzlesCompleted + newStats.puzzlesCompleted,
+          writingSubmitted: existingStats.writingSubmitted + newStats.writingSubmitted,
+          achievements: existingStats.achievements,
+          lastUpdated: Date.now()
+        };
+      } else {
+        // New player
+        mergedStats = {
+          ...newStats,
+          lastUpdated: Date.now()
+        };
       }
       
-      stats.lastUpdated = Date.now();
-      await setDoc(doc(db, COLLECTIONS.PLAYERS, stats.userId), stats);
+      // Check for new achievements
+      const newAchievements = AchievementService.checkNewAchievements(mergedStats);
+      if (newAchievements.length > 0) {
+        mergedStats.achievements = [...mergedStats.achievements, ...newAchievements];
+      }
+      
+      await setDoc(doc(db, COLLECTIONS.PLAYERS, mergedStats.userId), mergedStats);
     } catch (error) {
       console.error("Error saving player stats:", error);
       throw error;

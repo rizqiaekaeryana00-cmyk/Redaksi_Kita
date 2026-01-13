@@ -3,6 +3,13 @@ import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
 import { PuzzleLevel, User, PlayerStats } from '../types';
 
+/**
+ * PUZZLE VIEW (REDAKSI ARENA)
+ * Scoring: 10 points per puzzle solved correctly
+ * Tracks: puzzles completed, total score
+ * Levels: Easy (10 puzzles), Hard (20 puzzles)
+ */
+
 interface PuzzlePiece {
   id: string;
   text: string;
@@ -148,7 +155,7 @@ export const PuzzleView: React.FC<{ user: User; onExit: () => void }> = ({ user,
           userId: user.id,
           userName: user.name,
           school: user.school,
-          totalScore: solvedCount * 100,
+          totalScore: solvedCount * 10, // 10 points per puzzle
           quizCompleted: 0,
           quizCorrect: 0,
           hoaxBusted: 0,
