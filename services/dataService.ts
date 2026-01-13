@@ -1,13 +1,15 @@
 import { db } from '../firebaseConfig';
-import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { NewsItem, QuizQuestion, VideoContent, PuzzleLevel, INITIAL_NEWS, INITIAL_VIDEOS, INITIAL_QUIZ, INITIAL_PUZZLES } from '../types';
+import { collection, getDocs, addDoc, deleteDoc, doc, setDoc, query, orderBy, limit, where } from 'firebase/firestore';
+import { NewsItem, QuizQuestion, VideoContent, PuzzleLevel, PlayerStats, LeaderboardEntry, INITIAL_NEWS, INITIAL_VIDEOS, INITIAL_QUIZ, INITIAL_PUZZLES } from '../types';
+import { AchievementService } from './achievementService';
 
 // Nama Koleksi di Database Firestore
 const COLLECTIONS = {
   NEWS: 'news',
   VIDEOS: 'videos',
   QUIZ: 'quiz',
-  PUZZLES: 'puzzles' // Koleksi baru
+  PUZZLES: 'puzzles',
+  PLAYERS: 'players_stats'
 };
 
 export const DataService = {
@@ -121,5 +123,71 @@ export const DataService = {
   deletePuzzle: async (id: string): Promise<void> => {
     if (id.length < 4) return;
     await deleteDoc(doc(db, COLLECTIONS.PUZZLES, id));
+  },
+
+  // --- LEADERBOARD SERVICES ---
+  savePlayerStats: async (stats: PlayerStats): Promise<void> => {
+    try {
+      // Check for new achievements
+      const newAchievements = AchievementService.checkNewAchievements(stats);
+      if (newAchievements.length > 0) {
+        stats.achievements = [...stats.achievements, ...newAchievements];
+      }
+      
+      stats.lastUpdated = Date.now();
+      await setDoc(doc(db, COLLECTIONS.PLAYERS, stats.userId), stats);
+    } catch (error) {
+      console.error("Error saving player stats:", error);
+      throw error;
+    }
+  },
+
+  getPlayerStats: async (userId: string): Promise<PlayerStats | null> => {
+    try {
+      const playerDoc = await getDocs(
+        collection(db, COLLECTIONS.PLAYERS),
+      );
+      
+      const player = playerDoc.docs.find(d => d.data().userId === userId);
+      if (!player) return null;
+      
+      return player.data() as PlayerStats;
+    } catch (error) {
+      console.error("Error getting player stats:", error);
+      return null;
+    }
+  },
+
+  getLeaderboard: async (limit_count: number = 50): Promise<LeaderboardEntry[]> => {
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTIONS.PLAYERS));
+      const players: PlayerStats[] = querySnapshot.docs.map(d => d.data() as PlayerStats);
+      
+      // Sort by total score descending
+      players.sort((a, b) => b.totalScore - a.totalScore);
+      
+      // Add rank and accuracy
+      const leaderboard: LeaderboardEntry[] = players.slice(0, limit_count).map((player, index) => ({
+        ...player,
+        rank: index + 1,
+        accuracy: AchievementService.calculateAccuracy(player.quizCorrect, player.quizCompleted)
+      }));
+      
+      return leaderboard;
+    } catch (error) {
+      console.error("Error getting leaderboard:", error);
+      return [];
+    }
+  },
+
+  getUserRank: async (userId: string): Promise<number | null> => {
+    try {
+      const leaderboard = await DataService.getLeaderboard(1000);
+      const user = leaderboard.find(p => p.userId === userId);
+      return user ? user.rank : null;
+    } catch (error) {
+      console.error("Error getting user rank:", error);
+      return null;
+    }
   }
 };

@@ -13,6 +13,7 @@ import { NewsRoomView } from './views/NewsRoomView';
 import { PuzzleView } from './views/PuzzleView';
 import { WritingView } from './views/WritingView';
 import { QuizView } from './views/QuizView';
+import { LeaderboardView } from './views/LeaderboardView';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -74,6 +75,8 @@ export default function App() {
       {currentView === 'writing-desk' && <WritingView user={user} onExit={() => navigate('lobby')} />}
       
       {currentView === 'evaluation' && <QuizView onExit={() => navigate('lobby')} />}
+
+      {currentView === 'leaderboard' && <LeaderboardView onExit={() => navigate('lobby')} />}
 
     </Layout>
   );

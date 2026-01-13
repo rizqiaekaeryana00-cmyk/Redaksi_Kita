@@ -275,3 +275,97 @@ export const INITIAL_PUZZLES: PuzzleLevel[] = [
     body: 'Badan Penanggulangan Bencana Daerah (BPBD) melaporkan kerusakan ringan pada puluhan rumah. Tim SAR telah diterjunkan ke lokasi untuk membantu evakuasi warga terdampak.'
   }
 ];
+
+// Achievement System
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // FontAwesome icon class
+  condition: 'quiz_10' | 'hoax_5' | 'puzzle_10' | 'writing_5' | 'perfect_quiz' | 'speed_quiz' | 'all_games';
+  color: string; // Tailwind color class
+}
+
+export interface UserAchievement {
+  achievementId: string;
+  unlockedAt: number; // timestamp
+}
+
+export interface PlayerStats {
+  userId: string;
+  userName: string;
+  school: string;
+  totalScore: number;
+  quizCompleted: number;
+  quizCorrect: number;
+  hoaxBusted: number;
+  puzzlesCompleted: number;
+  writingSubmitted: number;
+  achievements: UserAchievement[];
+  lastUpdated: number;
+}
+
+export interface LeaderboardEntry extends PlayerStats {
+  rank: number;
+  accuracy: number; // percentage of correct answers
+}
+
+// Achievement Definitions
+export const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'quiz_master',
+    name: 'Quiz Master',
+    description: 'Selesaikan 10 kuis dengan benar',
+    icon: 'brain',
+    condition: 'quiz_10',
+    color: 'bg-blue-500'
+  },
+  {
+    id: 'hoax_buster',
+    name: 'Hoax Buster',
+    description: 'Tangkap 5 berita palsu',
+    icon: 'shield-alt',
+    condition: 'hoax_5',
+    color: 'bg-red-500'
+  },
+  {
+    id: 'puzzle_solver',
+    name: 'Puzzle Solver',
+    description: 'Selesaikan 10 puzzle berita',
+    icon: 'puzzle-piece',
+    condition: 'puzzle_10',
+    color: 'bg-purple-500'
+  },
+  {
+    id: 'author',
+    name: 'Penulis Muda',
+    description: 'Tulis 5 berita original',
+    icon: 'pen-fancy',
+    condition: 'writing_5',
+    color: 'bg-green-500'
+  },
+  {
+    id: 'perfect',
+    name: 'Sempurna!',
+    description: 'Jawab satu kuis dengan nilai 100%',
+    icon: 'star',
+    condition: 'perfect_quiz',
+    color: 'bg-yellow-500'
+  },
+  {
+    id: 'speedster',
+    name: 'Speedster',
+    description: 'Selesaikan kuis dalam waktu kurang dari 30 detik',
+    icon: 'bolt',
+    condition: 'speed_quiz',
+    color: 'bg-orange-500'
+  },
+  {
+    id: 'journalist',
+    name: 'Jurnalis Sejati',
+    description: 'Mainkan semua mode permainan',
+    icon: 'newspaper',
+    condition: 'all_games',
+    color: 'bg-indigo-500'
+  }
+];

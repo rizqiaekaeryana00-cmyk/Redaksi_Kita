@@ -1,5 +1,7 @@
-import React from 'react';
-import { User } from '../types';
+import React, { useState, useEffect } from 'react';
+import { User, PlayerStats } from '../types';
+import { DataService } from '../services/dataService';
+import { AchievementBadges } from '../components/AchievementBadges';
 
 interface LobbyProps {
   user: User;
@@ -9,6 +11,21 @@ interface LobbyProps {
 }
 
 export const LobbyView: React.FC<LobbyProps> = ({ user, onNavigate, onLogout, onOpenAdmin }) => {
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
+  const [userRank, setUserRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadPlayerStats();
+  }, [user.id]);
+
+  const loadPlayerStats = async () => {
+    const stats = await DataService.getPlayerStats(user.id);
+    setPlayerStats(stats);
+    if (stats) {
+      const rank = await DataService.getUserRank(user.id);
+      setUserRank(rank);
+    }
+  };
   return (
     <div className="flex-1 flex flex-col pb-16">
        {/* Header */}
@@ -28,6 +45,9 @@ export const LobbyView: React.FC<LobbyProps> = ({ user, onNavigate, onLogout, on
                      <i className="fas fa-tools mr-2"></i>Admin
                   </button>
                 )}
+                <button onClick={() => onNavigate('leaderboard')} className="bg-news-yellow text-gray-800 px-4 py-2 rounded-xl font-bold text-sm hover:bg-yellow-400 transition">
+                     <i className="fas fa-trophy mr-2"></i>Peringkat
+                </button>
                 <button onClick={onLogout} className="bg-white text-red-500 border border-red-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-red-50 transition">
                     Keluar
                 </button>
@@ -42,6 +62,37 @@ export const LobbyView: React.FC<LobbyProps> = ({ user, onNavigate, onLogout, on
                 </h1>
                 <p className="text-gray-500 font-bold text-sm md:text-base">Belajar. Bermain. Berkarya.</p>
             </div>
+
+            {/* Player Stats & Achievements */}
+            {playerStats && (
+              <div className="mb-8 glass-panel rounded-2xl p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-news-blue">{userRank || '?'}</div>
+                    <div className="text-xs text-gray-600 font-bold">Ranking</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-news-green">{playerStats.totalScore}</div>
+                    <div className="text-xs text-gray-600 font-bold">Skor Total</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-news-purple">{playerStats.achievements.length}</div>
+                    <div className="text-xs text-gray-600 font-bold">Pencapaian</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-news-yellow">
+                      {playerStats.quizCompleted > 0 ? Math.round((playerStats.quizCorrect / playerStats.quizCompleted) * 100) : 0}%
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold">Akurasi</div>
+                  </div>
+                </div>
+                
+                <div className="border-t-2 border-gray-200 pt-4">
+                  <div className="text-sm font-bold text-gray-600 mb-3">Pencapaian Terbuka:</div>
+                  <AchievementBadges achievements={playerStats.achievements} />
+                </div>
+              </div>
+            )}
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
