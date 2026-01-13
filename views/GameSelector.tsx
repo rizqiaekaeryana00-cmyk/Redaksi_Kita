@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AudioService } from '../services/audioService';
 
 interface GameSelectorProps {
@@ -14,44 +14,35 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
   onSelectGame,
   onBack,
 }) => {
-  const timeLimits = [60, 120, 180, 300];
-  const games = [
-    {
-      id: 'quiz',
-      name: 'Uji Kompetensi',
-      description: 'Race jawab soal berita dengan cepat dan tepat!',
-      icon: 'brain',
-      color: 'bg-blue-500',
-      borderColor: 'border-blue-500',
-    },
-    {
-      id: 'hoax',
-      name: 'Hoax Buster Battle',
-      description: 'Tap berita hoaks secepat kilat!',
-      icon: 'shield-alt',
-      color: 'bg-red-500',
-      borderColor: 'border-red-500',
-    },
-    {
-      id: 'puzzle',
-      name: 'Puzzle Redaksi',
-      description: 'Drag-drop susun berita dengan tepat!',
-      icon: 'puzzle-piece',
-      color: 'bg-purple-500',
-      borderColor: 'border-purple-500',
-    },
-  ];
+  const [selectedGame, setSelectedGame] = useState<'quiz' | 'hoax' | 'puzzle' | null>(null);
+  const [selectedTime, setSelectedTime] = useState<number | null>(null);
 
-  const handleGameSelect = (gameMode: 'quiz' | 'hoax' | 'puzzle', timeLimit: number) => {
+  const timeLimits = [60, 120, 180, 300];
+
+  const handleGameSelect = (gameId: 'quiz' | 'hoax' | 'puzzle') => {
     AudioService.playClick();
-    onSelectGame(gameMode, timeLimit);
+    setSelectedGame(gameId);
   };
+
+  const handleTimeSelect = (time: number) => {
+    AudioService.playClick();
+    setSelectedTime(time);
+  };
+
+  const handlePlay = () => {
+    if (selectedGame && selectedTime) {
+      AudioService.playWin();
+      onSelectGame(selectedGame, selectedTime);
+    }
+  };
+
+  const canPlay = selectedGame !== null && selectedTime !== null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-news-yellow via-news-pink to-news-purple p-4">
       {/* Header */}
-      <div className="max-w-6xl mx-auto mb-8">
-        <div className="flex justify-between items-center mb-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="font-display text-4xl font-bold text-white drop-shadow-lg mb-2">
               🎮 PILIH GAME
@@ -68,66 +59,101 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
           </button>
         </div>
 
+        {/* Game Mode Selection */}
+        <div className="glass-panel rounded-2xl p-8 mb-8">
+          <h2 className="font-bold text-gray-800 mb-6 text-xl">🎮 PILIH JENIS GAME:</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Quiz Game Card */}
+            <div
+              onClick={() => handleGameSelect('quiz')}
+              className={`cursor-pointer p-6 rounded-xl transition-all transform ${
+                selectedGame === 'quiz'
+                  ? 'bg-gradient-to-br from-news-blue to-news-blue/70 text-white scale-105 shadow-2xl ring-4 ring-news-blue'
+                  : 'bg-white text-gray-800 hover:shadow-lg hover:scale-102'
+              }`}
+            >
+              <div className="text-5xl mb-4">❓</div>
+              <h3 className="font-bold text-2xl mb-2">QUIZ</h3>
+              <p className={selectedGame === 'quiz' ? 'text-blue-100 text-sm' : 'text-gray-600 text-sm'}>
+                Jawab pertanyaan dengan benar
+              </p>
+            </div>
+
+            {/* Hoax Game Card */}
+            <div
+              onClick={() => handleGameSelect('hoax')}
+              className={`cursor-pointer p-6 rounded-xl transition-all transform ${
+                selectedGame === 'hoax'
+                  ? 'bg-gradient-to-br from-news-pink to-news-pink/70 text-white scale-105 shadow-2xl ring-4 ring-news-pink'
+                  : 'bg-white text-gray-800 hover:shadow-lg hover:scale-102'
+              }`}
+            >
+              <div className="text-5xl mb-4">🚨</div>
+              <h3 className="font-bold text-2xl mb-2">HOAX BUSTER</h3>
+              <p className={selectedGame === 'hoax' ? 'text-pink-100 text-sm' : 'text-gray-600 text-sm'}>
+                Tangkap berita palsu dengan cepat
+              </p>
+            </div>
+
+            {/* Puzzle Game Card */}
+            <div
+              onClick={() => handleGameSelect('puzzle')}
+              className={`cursor-pointer p-6 rounded-xl transition-all transform ${
+                selectedGame === 'puzzle'
+                  ? 'bg-gradient-to-br from-news-purple to-news-purple/70 text-white scale-105 shadow-2xl ring-4 ring-news-purple'
+                  : 'bg-white text-gray-800 hover:shadow-lg hover:scale-102'
+              }`}
+            >
+              <div className="text-5xl mb-4">🧩</div>
+              <h3 className="font-bold text-2xl mb-2">PUZZLE</h3>
+              <p className={selectedGame === 'puzzle' ? 'text-purple-100 text-sm' : 'text-gray-600 text-sm'}>
+                Susun berita dengan urutan tepat
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Time Limit Selection */}
-        <div className="glass-panel rounded-2xl p-6 mb-8">
-          <h2 className="font-bold text-gray-800 mb-4">⏱️ PILIH BATAS WAKTU:</h2>
+        <div className="glass-panel rounded-2xl p-8 mb-8">
+          <h2 className="font-bold text-gray-800 mb-6 text-xl">⏱️ PILIH BATAS WAKTU:</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {timeLimits.map((time) => (
-              <div key={time} className="text-center">
-                <button
-                  onClick={() => handleGameSelect('quiz', time)}
-                  className="group w-full bg-news-blue hover:bg-news-blue/80 text-white p-3 rounded-lg font-bold transition transform hover:scale-105"
-                  title="Waktu berlaku untuk semua game"
-                >
-                  <div className="text-2xl mb-1">{time === 60 ? '1' : time === 120 ? '2' : time === 180 ? '3' : '5'}</div>
-                  <div className="text-xs">
-                    {time === 60 ? '1 Menit' : time === 120 ? '2 Menit' : time === 180 ? '3 Menit' : '5 Menit'}
-                  </div>
-                </button>
-              </div>
+              <button
+                key={time}
+                onClick={() => handleTimeSelect(time)}
+                className={`py-4 px-4 rounded-lg font-bold text-lg transition-all transform ${
+                  selectedTime === time
+                    ? 'bg-news-blue text-white scale-110 shadow-xl ring-4 ring-news-blue'
+                    : 'bg-blue-200 text-gray-700 hover:bg-blue-300 hover:scale-105'
+                }`}
+              >
+                <div className="text-2xl">{time === 60 ? '1' : time === 120 ? '2' : time === 180 ? '3' : '5'}</div>
+                <div className="text-xs">Menit</div>
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Game Selection Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {games.map((game: any) => (
-            <div
-              key={game.id}
-              className={`glass-panel rounded-3xl p-8 border-4 ${game.borderColor} hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer`}
-              onClick={() => {
-                AudioService.playClick();
-                // Open time selector modal for this game
-              }}
+        {/* Play Button - Only shows when both game and time selected */}
+        {canPlay && (
+          <div className="flex justify-center">
+            <button
+              onClick={handlePlay}
+              className="bg-gradient-to-r from-news-green to-news-blue hover:from-news-green/80 hover:to-news-blue/80 text-white px-12 py-4 rounded-full font-bold text-2xl transition transform hover:scale-105 shadow-xl animate-pulse"
             >
-              <div className={`${game.color} rounded-2xl p-6 mb-6 text-white`}>
-                <i className={`fas fa-${game.icon} text-5xl`}></i>
-              </div>
-              
-              <h3 className="font-display text-2xl font-bold text-gray-800 mb-2">
-                {game.name}
-              </h3>
-              
-              <p className="text-gray-600 font-bold mb-6">{game.description}</p>
+              ▶️ MAINKAN GAME
+            </button>
+          </div>
+        )}
 
-              {/* Time buttons for each game */}
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 font-bold uppercase mb-3">Pilih waktu:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {timeLimits.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => handleGameSelect(game.id as 'quiz' | 'hoax' | 'puzzle', time)}
-                      className={`${game.color} text-white py-2 px-3 rounded-lg font-bold text-sm hover:opacity-90 transition`}
-                    >
-                      {time === 60 ? '1m' : time === 120 ? '2m' : time === 180 ? '3m' : '5m'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Guidance Text */}
+        {!canPlay && (
+          <div className="text-center">
+            <p className="text-white/80 font-bold text-lg drop-shadow-lg">
+              Pilih jenis game dan waktu untuk memulai
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
