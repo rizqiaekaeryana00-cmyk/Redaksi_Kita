@@ -31,7 +31,9 @@ export default function App() {
 
   const handleLogin = (name: string, school: string) => {
     const role = name.toLowerCase() === 'admin' ? 'admin' : 'user';
-    const newUser: User = { id: Date.now().toString(), name, school, role, totalScore: 0 };
+    // Generate consistent user ID from name + school (not random)
+    const userId = btoa(`${name}|${school}`).slice(0, 16); // Base64 encode as consistent ID
+    const newUser: User = { id: userId, name, school, role, totalScore: 0 };
     setUser(newUser);
     sessionStorage.setItem('redaksi_user', JSON.stringify(newUser));
     setCurrentView('lobby');
