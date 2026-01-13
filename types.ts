@@ -310,6 +310,27 @@ export interface LeaderboardEntry extends PlayerStats {
   accuracy: number; // percentage of correct answers
 }
 
+// Multiplayer Game Types
+export interface MultiplayerPlayer {
+  name: string;
+  side: 'left' | 'right';
+  score: number;
+  correct?: number;
+  hoaxCaught?: number;
+  puzzlesSolved?: number;
+}
+
+export interface MultiplayerGameState {
+  player1: MultiplayerPlayer;
+  player2: MultiplayerPlayer;
+  gameMode: 'quiz' | 'hoax' | 'puzzle';
+  timeLimit: number; // seconds (60, 120, 180, 300)
+  timeRemaining: number;
+  isActive: boolean;
+  startTime: number;
+  endTime: number;
+}
+
 // Achievement Definitions
 export const ACHIEVEMENTS: Achievement[] = [
   {

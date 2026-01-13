@@ -14,6 +14,7 @@ import { PuzzleView } from './views/PuzzleView';
 import { WritingView } from './views/WritingView';
 import { QuizView } from './views/QuizView';
 import { LeaderboardView } from './views/LeaderboardView';
+import { MultiplayerMode } from './views/MultiplayerMode';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -79,6 +80,8 @@ export default function App() {
       {currentView === 'evaluation' && user && <QuizView user={user} onExit={() => navigate('lobby')} />}
 
       {currentView === 'leaderboard' && <LeaderboardView onExit={() => navigate('lobby')} />}
+
+      {currentView === 'multiplayer' && <MultiplayerMode onExit={() => navigate('lobby')} />}
 
     </Layout>
   );

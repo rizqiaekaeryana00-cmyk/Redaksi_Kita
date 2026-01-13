@@ -45,6 +45,9 @@ export const LobbyView: React.FC<LobbyProps> = ({ user, onNavigate, onLogout, on
                      <i className="fas fa-tools mr-2"></i>Admin
                   </button>
                 )}
+                <button onClick={() => onNavigate('multiplayer')} className="bg-gradient-to-r from-news-green to-news-blue text-white px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 transition">
+                     <i className="fas fa-gamepad mr-2"></i>Multiplayer
+                </button>
                 <button onClick={() => onNavigate('leaderboard')} className="bg-news-yellow text-gray-800 px-4 py-2 rounded-xl font-bold text-sm hover:bg-yellow-400 transition">
                      <i className="fas fa-trophy mr-2"></i>Peringkat
                 </button>
