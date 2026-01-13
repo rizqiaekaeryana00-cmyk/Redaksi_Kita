@@ -85,9 +85,21 @@ export const LobbyView: React.FC<LobbyProps> = ({ user, onNavigate, onLogout, on
         
         {/* Ticker */}
         <div className="fixed bottom-0 w-full bg-news-dark text-white py-2 overflow-hidden z-50 border-t-4 border-news-yellow shadow-lg">
-            <div className="whitespace-nowrap animate-[ticker_20s_linear_infinite] font-mono font-bold text-sm px-4">
+            <div 
+              className="whitespace-nowrap font-mono font-bold text-sm px-4 inline-block"
+              style={{
+                animation: 'ticker 20s linear infinite',
+                minWidth: '100%'
+              }}
+            >
                 +++ BREAKING NEWS: HOAX BUSTER Mode Kini Telah Dibuka! +++ Basmi berita palsu sekarang juga +++ Jadilah jurnalis cerdas anti-hoaks +++ REDaksi KITA Siap Mengudara +++
             </div>
+            <style>{`
+              @keyframes ticker {
+                0% { transform: translateX(100%); }
+                100% { transform: translateX(-100%); }
+              }
+            `}</style>
         </div>
     </div>
   );
