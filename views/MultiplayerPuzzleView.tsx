@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
+import { PuzzleLevel } from '../types';
 
 interface MultiplayerPuzzleViewProps {
   player1Name: string;
@@ -11,16 +13,14 @@ interface MultiplayerPuzzleViewProps {
 interface PuzzlePiece {
   id: string;
   text: string;
-  correctPosition: number;
+  correctZone: 'headline' | 'lead' | 'body';
 }
 
-const PUZZLE_TEXTS = [
-  ['Presiden', 'mengumumkan', 'kebijakan', 'baru', 'untuk', 'ekonomi'],
-  ['Bencana', 'alam', 'melanda', 'daerah', 'perkotaan', 'kemarin'],
-  ['Tim', 'olahraga', 'nasional', 'memenangkan', 'medali', 'emas'],
-  ['Teknologi', 'terbaru', 'merevolusi', 'cara', 'kita', 'bekerja'],
-  ['Pendidikan', 'digital', 'berkembang', 'pesat', 'di', 'negara'],
-];
+interface PlayerPuzzleState {
+  pieces: PuzzlePiece[];
+  zones: { headline: string | null; lead: string | null; body: string | null };
+  puzzleSolved: boolean;
+}
 
 export const MultiplayerPuzzleView: React.FC<MultiplayerPuzzleViewProps> = ({
   player1Name,
@@ -28,32 +28,49 @@ export const MultiplayerPuzzleView: React.FC<MultiplayerPuzzleViewProps> = ({
   timeLimit,
   onGameEnd,
 }) => {
-  const [puzzleIndex, setPuzzleIndex] = useState(0);
+  const [puzzles, setPuzzles] = useState<PuzzleLevel[]>([]);
+  const [p1State, setP1State] = useState<PlayerPuzzleState>({
+    pieces: [],
+    zones: { headline: null, lead: null, body: null },
+    puzzleSolved: false,
+  });
+  const [p2State, setP2State] = useState<PlayerPuzzleState>({
+    pieces: [],
+    zones: { headline: null, lead: null, body: null },
+    puzzleSolved: false,
+  });
+
+  const [currentPuzzleIdx, setCurrentPuzzleIdx] = useState(0);
   const [p1Score, setP1Score] = useState(0);
   const [p2Score, setP2Score] = useState(0);
   const [p1Correct, setP1Correct] = useState(0);
   const [p2Correct, setP2Correct] = useState(0);
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [gameActive, setGameActive] = useState(true);
+  const [draggedPiece, setDraggedPiece] = useState<{ playerId: 'p1' | 'p2'; pieceId: string } | null>(null);
 
-  // Each player has their own puzzle state
-  const [p1Solution, setP1Solution] = useState<string[]>([]);
-  const [p2Solution, setP2Solution] = useState<string[]>([]);
-  const [p1Completed, setP1Completed] = useState(false);
-  const [p2Completed, setP2Completed] = useState(false);
-
-  const currentPuzzle = PUZZLE_TEXTS[puzzleIndex];
-  const [p1Shuffled, setP1Shuffled] = useState<string[]>([]);
-  const [p2Shuffled, setP2Shuffled] = useState<string[]>([]);
-
-  // Initialize shuffled pieces
+  // Load puzzles
   useEffect(() => {
-    const shufflePuzzle = (arr: string[]) => {
-      return [...arr].sort(() => Math.random() - 0.5);
-    };
-    setP1Shuffled(shufflePuzzle(currentPuzzle));
-    setP2Shuffled(shufflePuzzle(currentPuzzle));
-  }, [puzzleIndex]);
+    DataService.getPuzzles().then((data) => {
+      const shuffled = [...data].sort(() => Math.random() - 0.5);
+      setPuzzles(shuffled.slice(0, 5)); // 5 puzzles for multiplayer
+    });
+  }, []);
+
+  // Initialize puzzle for both players
+  useEffect(() => {
+    if (puzzles.length > 0 && currentPuzzleIdx < puzzles.length) {
+      const puzzle = puzzles[currentPuzzleIdx];
+      const pieces: PuzzlePiece[] = [
+        { id: 'h', text: puzzle.headline, correctZone: 'headline' },
+        { id: 'l', text: puzzle.lead, correctZone: 'lead' },
+        { id: 'b', text: puzzle.body, correctZone: 'body' },
+      ].sort(() => Math.random() - 0.5);
+
+      setP1State({ pieces: [...pieces], zones: { headline: null, lead: null, body: null }, puzzleSolved: false });
+      setP2State({ pieces: [...pieces], zones: { headline: null, lead: null, body: null }, puzzleSolved: false });
+    }
+  }, [currentPuzzleIdx, puzzles]);
 
   // Timer countdown
   useEffect(() => {
@@ -61,12 +78,11 @@ export const MultiplayerPuzzleView: React.FC<MultiplayerPuzzleViewProps> = ({
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        const newTime = prev - 1;
-        if (newTime <= 0) {
+        if (prev <= 1) {
           setGameActive(false);
           return 0;
         }
-        return newTime;
+        return prev - 1;
       });
     }, 1000);
 
@@ -75,219 +91,270 @@ export const MultiplayerPuzzleView: React.FC<MultiplayerPuzzleViewProps> = ({
 
   // End game
   useEffect(() => {
-    if (!gameActive && timeLeft === 0) {
+    if (timeLeft === 0 && gameActive) {
+      setGameActive(false);
       onGameEnd(p1Score, p2Score, p1Correct, p2Correct);
     }
-  }, [gameActive, timeLeft, p1Score, p2Score, p1Correct, p2Correct, onGameEnd]);
+  }, [timeLeft, gameActive, p1Score, p2Score, p1Correct, p2Correct, onGameEnd]);
 
-  const checkIfCorrect = (solution: string[], player: 'p1' | 'p2') => {
-    return JSON.stringify(solution) === JSON.stringify(currentPuzzle);
+  const handleDragStart = (playerId: 'p1' | 'p2', pieceId: string) => {
+    setDraggedPiece({ playerId, pieceId });
   };
 
-  const handleAddPiece = (
-    piece: string,
-    player: 'p1' | 'p2'
-  ) => {
-    if (!gameActive) return;
+  const handleDrop = (playerId: 'p1' | 'p2', zone: 'headline' | 'lead' | 'body') => {
+    if (!draggedPiece || draggedPiece.playerId !== playerId) {
+      setDraggedPiece(null);
+      return;
+    }
 
-    if (player === 'p1') {
-      const newSolution = [...p1Solution, piece];
-      setP1Solution(newSolution);
-      setP1Shuffled(p1Shuffled.filter((p) => p !== piece));
+    const state = playerId === 'p1' ? p1State : p2State;
+    const piece = state.pieces.find((p) => p.id === draggedPiece.pieceId);
 
-      if (newSolution.length === currentPuzzle.length) {
-        if (checkIfCorrect(newSolution, 'p1')) {
-          AudioService.playWin();
-          setP1Score((prev) => prev + 10);
-          setP1Correct((prev) => prev + 1);
-          setP1Completed(true);
+    if (!piece) {
+      setDraggedPiece(null);
+      return;
+    }
 
-          // Auto next puzzle in 2 seconds
-          setTimeout(() => {
-            if (puzzleIndex < PUZZLE_TEXTS.length - 1) {
-              setPuzzleIndex((prev) => prev + 1);
-              setP1Solution([]);
-              setP1Completed(false);
-            }
-          }, 2000);
+    if (piece.correctZone === zone) {
+      // Correct
+      AudioService.playCorrect();
+      const newZones = { ...state.zones, [zone]: piece.text };
+      const newPieces = state.pieces.filter((p) => p.id !== piece.id);
+
+      if (playerId === 'p1') {
+        setP1State({ pieces: newPieces, zones: newZones, puzzleSolved: false });
+      } else {
+        setP2State({ pieces: newPieces, zones: newZones, puzzleSolved: false });
+      }
+
+      // Check if puzzle complete
+      if (newZones.headline && newZones.lead && newZones.body) {
+        if (playerId === 'p1') {
+          setP1Score((s) => s + 10);
+          setP1Correct((c) => c + 1);
+          setP1State((prev) => ({ ...prev, puzzleSolved: true }));
         } else {
-          AudioService.playClick();
-          setP1Solution([]);
-          setP1Shuffled(currentPuzzle.sort(() => Math.random() - 0.5));
+          setP2Score((s) => s + 10);
+          setP2Correct((c) => c + 1);
+          setP2State((prev) => ({ ...prev, puzzleSolved: true }));
         }
+
+        // Auto next puzzle in 2 seconds
+        setTimeout(() => {
+          if (currentPuzzleIdx + 1 < puzzles.length) {
+            setCurrentPuzzleIdx((prev) => prev + 1);
+          }
+        }, 2000);
       }
     } else {
-      const newSolution = [...p2Solution, piece];
-      setP2Solution(newSolution);
-      setP2Shuffled(p2Shuffled.filter((p) => p !== piece));
-
-      if (newSolution.length === currentPuzzle.length) {
-        if (checkIfCorrect(newSolution, 'p2')) {
-          AudioService.playWin();
-          setP2Score((prev) => prev + 10);
-          setP2Correct((prev) => prev + 1);
-          setP2Completed(true);
-
-          // Auto next puzzle in 2 seconds
-          setTimeout(() => {
-            if (puzzleIndex < PUZZLE_TEXTS.length - 1) {
-              setPuzzleIndex((prev) => prev + 1);
-              setP2Solution([]);
-              setP2Completed(false);
-            }
-          }, 2000);
-        } else {
-          AudioService.playClick();
-          setP2Solution([]);
-          setP2Shuffled(currentPuzzle.sort(() => Math.random() - 0.5));
-        }
-      }
+      // Wrong
+      AudioService.playWrong();
     }
-  };
 
-  const handleRemovePiece = (
-    index: number,
-    player: 'p1' | 'p2'
-  ) => {
-    if (!gameActive) return;
-
-    if (player === 'p1') {
-      const piece = p1Solution[index];
-      setP1Solution(p1Solution.filter((_, i) => i !== index));
-      setP1Shuffled([...p1Shuffled, piece]);
-    } else {
-      const piece = p2Solution[index];
-      setP2Solution(p2Solution.filter((_, i) => i !== index));
-      setP2Shuffled([...p2Shuffled, piece]);
-    }
+    setDraggedPiece(null);
   };
 
   return (
-    <div className="h-screen bg-gray-900 flex overflow-hidden relative">
-      {/* Left Player - P1 */}
-      <div className="w-1/2 bg-gradient-to-br from-blue-900 via-gray-900 to-gray-800 border-4 border-green-500 relative overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-black/50 p-4 z-10 border-b border-green-500">
-          <div className="text-white">
-            <p className="text-sm font-bold text-green-400">PEMAIN 1</p>
-            <p className="text-lg font-bold text-green-300">{player1Name}</p>
-            <p className="text-2xl font-bold text-green-300 mt-1">{p1Score} poin</p>
+    <div className="h-screen flex bg-gray-900 overflow-hidden relative font-sans select-none">
+      {/* GLOBAL TIMER */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none drop-shadow-2xl">
+        <div className="bg-gray-800/90 backdrop-blur-md rounded-full w-24 h-24 flex items-center justify-center border-4 border-white/20 shadow-2xl animate-pulse">
+          <span className={`text-4xl font-black ${timeLeft < 10 ? 'text-red-500' : 'text-white'}`}>
+            {timeLeft}
+          </span>
+        </div>
+      </div>
+
+      {/* PLAYER 1 AREA (Left) */}
+      <div className="w-1/2 border-r-2 border-white/10 relative bg-gradient-to-br from-blue-900/40 to-gray-900 flex flex-col">
+        {/* HUD P1 */}
+        <div className="bg-black/60 p-4 flex justify-between items-center z-40 border-b border-white/10">
+          <div>
+            <div className="text-news-green font-bold text-xs tracking-widest uppercase">Pemain 1</div>
+            <div className="text-white text-xl font-black">{player1Name}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-gray-400 font-bold text-xs uppercase">SKOR</div>
+            <div className="text-news-green text-4xl font-mono font-bold">{p1Score}</div>
           </div>
         </div>
 
-        {/* Game Area */}
-        <div className="flex-1 p-4 overflow-auto flex flex-col justify-between">
-          {/* Solution Display */}
-          <div className="space-y-3">
-            <p className="text-green-300 font-bold text-sm">Susunan Berita:</p>
-            <div className="bg-green-900/30 rounded-lg p-3 min-h-20">
-              {p1Completed ? (
-                <div className="text-center">
-                  <p className="text-2xl text-green-400 font-bold">✅ BENAR!</p>
-                  <p className="text-green-300 text-sm mt-1">+10 poin</p>
+        {/* Game Field P1 */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Pieces Sidebar */}
+          <div className="mb-6">
+            <h4 className="text-gray-400 font-bold text-xs uppercase mb-3 tracking-wider">Potongan</h4>
+            <div className="space-y-2">
+              {p1State.pieces.map((p) => (
+                <div
+                  key={p.id}
+                  draggable
+                  onDragStart={() => handleDragStart('p1', p.id)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-lg shadow cursor-grab active:cursor-grabbing border-l-4 border-blue-400 text-sm font-bold transition"
+                >
+                  {p.text.substring(0, 40)}...
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {p1Solution.map((piece, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleRemovePiece(idx, 'p1')}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-bold"
-                    >
-                      {piece} ✕
-                    </button>
-                  ))}
-                </div>
+              ))}
+              {p1State.pieces.length === 0 && (
+                <div className="text-center py-4 text-green-400 font-bold">✅ Selesai!</div>
               )}
             </div>
           </div>
 
-          {/* Available Pieces */}
+          {/* Drop Zones */}
           <div className="space-y-3">
-            <p className="text-green-300 font-bold text-sm">Kata Tersedia:</p>
-            <div className="flex flex-wrap gap-2 bg-gray-800/50 p-3 rounded-lg">
-              {p1Shuffled.map((piece) => (
-                <button
-                  key={piece}
-                  onClick={() => handleAddPiece(piece, 'p1')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-bold transition"
-                >
-                  {piece}
-                </button>
-              ))}
+            {/* Headline */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p1', 'headline')}
+              className={`min-h-[60px] rounded-lg border-2 border-dashed p-3 transition ${
+                p1State.zones.headline
+                  ? 'bg-blue-600/20 border-blue-400 text-blue-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p1State.zones.headline ? (
+                <h5 className="font-bold text-sm">{p1State.zones.headline}</h5>
+              ) : (
+                <div className="text-xs">📰 HEADLINE</div>
+              )}
+            </div>
+
+            {/* Lead */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p1', 'lead')}
+              className={`min-h-[60px] rounded-lg border-2 border-dashed p-3 transition ${
+                p1State.zones.lead
+                  ? 'bg-green-600/20 border-green-400 text-green-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p1State.zones.lead ? (
+                <p className="text-xs font-bold">{p1State.zones.lead}</p>
+              ) : (
+                <div className="text-xs">✏️ LEAD</div>
+              )}
+            </div>
+
+            {/* Body */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p1', 'body')}
+              className={`min-h-[80px] rounded-lg border-2 border-dashed p-3 transition ${
+                p1State.zones.body
+                  ? 'bg-gray-500/20 border-gray-400 text-gray-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p1State.zones.body ? (
+                <p className="text-xs">{p1State.zones.body}</p>
+              ) : (
+                <div className="text-xs">📄 BODY</div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Timer in Center */}
-      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-center z-50 pointer-events-none">
-        <div className="text-6xl font-bold drop-shadow-2xl">⏱️</div>
-        <div className="text-5xl font-bold text-yellow-300 drop-shadow-2xl mt-2">
-          {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-        </div>
-        {!gameActive && (
-          <div className="text-3xl font-bold text-red-400 mt-4 drop-shadow-2xl">
-            GAME OVER
+      {/* PLAYER 2 AREA (Right) */}
+      <div className="w-1/2 border-l-2 border-white/10 relative bg-gradient-to-bl from-red-900/40 to-gray-900 flex flex-col">
+        {/* HUD P2 */}
+        <div className="bg-black/60 p-4 flex justify-between items-center z-40 border-b border-white/10">
+          <div className="text-left">
+            <div className="text-gray-400 font-bold text-xs uppercase">SKOR</div>
+            <div className="text-news-red text-4xl font-mono font-bold">{p2Score}</div>
           </div>
-        )}
-      </div>
-
-      {/* Right Player - P2 */}
-      <div className="w-1/2 bg-gradient-to-br from-blue-900 via-gray-900 to-gray-800 border-4 border-red-500 relative overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-black/50 p-4 z-10 border-b border-red-500">
-          <div className="text-white text-right">
-            <p className="text-sm font-bold text-red-400">PEMAIN 2</p>
-            <p className="text-lg font-bold text-red-300">{player2Name}</p>
-            <p className="text-2xl font-bold text-red-300 mt-1">{p2Score} poin</p>
+          <div className="text-right">
+            <div className="text-news-red font-bold text-xs tracking-widest uppercase">Pemain 2</div>
+            <div className="text-white text-xl font-black">{player2Name}</div>
           </div>
         </div>
 
-        {/* Game Area */}
-        <div className="flex-1 p-4 overflow-auto flex flex-col justify-between">
-          {/* Solution Display */}
-          <div className="space-y-3">
-            <p className="text-red-300 font-bold text-sm">Susunan Berita:</p>
-            <div className="bg-red-900/30 rounded-lg p-3 min-h-20">
-              {p2Completed ? (
-                <div className="text-center">
-                  <p className="text-2xl text-red-400 font-bold">✅ BENAR!</p>
-                  <p className="text-red-300 text-sm mt-1">+10 poin</p>
+        {/* Game Field P2 */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Pieces Sidebar */}
+          <div className="mb-6">
+            <h4 className="text-gray-400 font-bold text-xs uppercase mb-3 tracking-wider">Potongan</h4>
+            <div className="space-y-2">
+              {p2State.pieces.map((p) => (
+                <div
+                  key={p.id}
+                  draggable
+                  onDragStart={() => handleDragStart('p2', p.id)}
+                  className="bg-red-600 hover:bg-red-500 text-white p-3 rounded-lg shadow cursor-grab active:cursor-grabbing border-l-4 border-red-400 text-sm font-bold transition"
+                >
+                  {p.text.substring(0, 40)}...
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {p2Solution.map((piece, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleRemovePiece(idx, 'p2')}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-bold"
-                    >
-                      {piece} ✕
-                    </button>
-                  ))}
-                </div>
+              ))}
+              {p2State.pieces.length === 0 && (
+                <div className="text-center py-4 text-green-400 font-bold">✅ Selesai!</div>
               )}
             </div>
           </div>
 
-          {/* Available Pieces */}
+          {/* Drop Zones */}
           <div className="space-y-3">
-            <p className="text-red-300 font-bold text-sm">Kata Tersedia:</p>
-            <div className="flex flex-wrap gap-2 bg-gray-800/50 p-3 rounded-lg">
-              {p2Shuffled.map((piece) => (
-                <button
-                  key={piece}
-                  onClick={() => handleAddPiece(piece, 'p2')}
-                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-bold transition"
-                >
-                  {piece}
-                </button>
-              ))}
+            {/* Headline */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p2', 'headline')}
+              className={`min-h-[60px] rounded-lg border-2 border-dashed p-3 transition ${
+                p2State.zones.headline
+                  ? 'bg-blue-600/20 border-blue-400 text-blue-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p2State.zones.headline ? (
+                <h5 className="font-bold text-sm">{p2State.zones.headline}</h5>
+              ) : (
+                <div className="text-xs">📰 HEADLINE</div>
+              )}
+            </div>
+
+            {/* Lead */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p2', 'lead')}
+              className={`min-h-[60px] rounded-lg border-2 border-dashed p-3 transition ${
+                p2State.zones.lead
+                  ? 'bg-green-600/20 border-green-400 text-green-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p2State.zones.lead ? (
+                <p className="text-xs font-bold">{p2State.zones.lead}</p>
+              ) : (
+                <div className="text-xs">✏️ LEAD</div>
+              )}
+            </div>
+
+            {/* Body */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop('p2', 'body')}
+              className={`min-h-[80px] rounded-lg border-2 border-dashed p-3 transition ${
+                p2State.zones.body
+                  ? 'bg-gray-500/20 border-gray-400 text-gray-300'
+                  : 'bg-gray-800/50 border-gray-600 text-gray-500'
+              }`}
+            >
+              {p2State.zones.body ? (
+                <p className="text-xs">{p2State.zones.body}</p>
+              ) : (
+                <div className="text-xs">📄 BODY</div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Game Over Overlay */}
+      {!gameActive && timeLeft === 0 && (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <h1 className="text-6xl font-black text-white animate-bounce">WAKTU HABIS!</h1>
+        </div>
+      )}
     </div>
   );
 };
