@@ -180,14 +180,16 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
       {/* PLAYER 1 AREA (Left) */}
       <div className="w-1/2 border-r-2 border-white/10 relative bg-gradient-to-br from-green-900/40 to-gray-900">
          {/* HUD P1 */}
-         <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-40 bg-gradient-to-b from-black/80 to-transparent">
-             <div>
-                <div className="text-news-green font-bold text-xs tracking-[0.2em] uppercase mb-1">Pemain 1</div>
-                <div className="text-white text-3xl font-black drop-shadow-md">{player1Name}</div>
+         <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-40 bg-gradient-to-b from-black/80 to-transparent">
+             <div className="flex items-center gap-4">
+                <div>
+                   <div className="text-news-green font-bold text-xs tracking-widest uppercase">Pemain 1</div>
+                   <div className="text-white text-xl font-black">{player1Name}</div>
+                </div>
              </div>
              <div className="text-right">
-                <div className="text-gray-400 font-bold text-xs uppercase mb-1">Skor</div>
-                <div className="text-news-green text-5xl font-mono font-bold drop-shadow-lg">{p1Score}</div>
+                <div className="text-gray-400 font-bold text-xs uppercase">SKOR</div>
+                <div className="text-news-green text-4xl font-mono font-bold">{p1Score}</div>
              </div>
          </div>
 
@@ -198,24 +200,23 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
                 key={item.id}
                 onMouseDown={(e) => { e.preventDefault(); handleTap(item, 'p1'); }}
                 onTouchStart={(e) => { e.preventDefault(); handleTap(item, 'p1'); }}
-                className={`absolute p-4 rounded-xl shadow-lg border-b-4 cursor-pointer transform transition-transform animate-pop-in max-w-[200px] text-center
+                className={`absolute px-6 py-4 rounded-xl shadow-lg border-b-4 cursor-pointer transform hover:scale-110 active:scale-95 transition-transform animate-pop-in max-w-xs text-center font-bold text-white select-none
                    ${item.news.type === 'hoax' 
-                      ? 'bg-red-500 border-red-700 hover:bg-red-400 text-white' 
-                      : 'bg-green-500 border-green-700 hover:bg-green-400 text-white'
+                      ? 'bg-red-500 border-red-700 hover:bg-red-400' 
+                      : 'bg-green-500 border-green-700 hover:bg-green-400'
                    }
                 `}
                 style={{ 
                    top: `${item.y}%`, 
                    left: `${item.x}%`, 
-                   transform: 'translate(-50%, -50%) scale(1.0)',
+                   zIndex: 20,
+                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                  <div className="text-[10px] uppercase font-bold opacity-80 mb-2 tracking-wider">
-                    {item.news.type === 'hoax' ? 'BERITA HOAX' : 'BERITA ASLI'}
-                  </div>
-                  <div className="font-bold text-sm leading-tight line-clamp-3 drop-shadow-sm">
-                    {item.news.headline}
-                  </div>
+                <div className="text-xs uppercase font-black opacity-90 mb-1 tracking-wider">
+                  {item.news.type === 'hoax' ? 'HOAX' : 'REAL'}
+                </div>
+                {item.news.headline}
               </div>
             ))}
          </div>
@@ -224,14 +225,16 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
       {/* PLAYER 2 AREA (Right) */}
       <div className="w-1/2 border-l-2 border-white/10 relative bg-gradient-to-bl from-red-900/40 to-gray-900">
          {/* HUD P2 */}
-         <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-40 bg-gradient-to-b from-black/80 to-transparent">
+         <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-40 bg-gradient-to-b from-black/80 to-transparent">
              <div className="text-left">
-                <div className="text-gray-400 font-bold text-xs uppercase mb-1">Skor</div>
-                <div className="text-news-red text-5xl font-mono font-bold drop-shadow-lg">{p2Score}</div>
+                <div className="text-gray-400 font-bold text-xs uppercase">SKOR</div>
+                <div className="text-news-red text-4xl font-mono font-bold">{p2Score}</div>
              </div>
-             <div className="text-right">
-                <div className="text-news-red font-bold text-xs tracking-[0.2em] uppercase mb-1">Pemain 2</div>
-                <div className="text-white text-3xl font-black drop-shadow-md">{player2Name}</div>
+             <div className="flex items-center gap-4">
+                <div className="text-right">
+                   <div className="text-news-red font-bold text-xs tracking-widest uppercase">Pemain 2</div>
+                   <div className="text-white text-xl font-black">{player2Name}</div>
+                </div>
              </div>
          </div>
 
@@ -242,24 +245,23 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
                 key={item.id}
                 onMouseDown={(e) => { e.preventDefault(); handleTap(item, 'p2'); }}
                 onTouchStart={(e) => { e.preventDefault(); handleTap(item, 'p2'); }}
-                className={`absolute p-4 rounded-xl shadow-lg border-b-4 cursor-pointer transform transition-transform animate-pop-in max-w-[200px] text-center
+                className={`absolute px-6 py-4 rounded-xl shadow-lg border-b-4 cursor-pointer transform hover:scale-110 active:scale-95 transition-transform animate-pop-in max-w-xs text-center font-bold text-white select-none
                    ${item.news.type === 'hoax' 
-                      ? 'bg-red-500 border-red-700 hover:bg-red-400 text-white' 
-                      : 'bg-green-500 border-green-700 hover:bg-green-400 text-white'
+                      ? 'bg-red-500 border-red-700 hover:bg-red-400' 
+                      : 'bg-green-500 border-green-700 hover:bg-green-400'
                    }
                 `}
                 style={{ 
                    top: `${item.y}%`, 
                    left: `${item.x}%`, 
-                   transform: 'translate(-50%, -50%) scale(1.0)'
+                   zIndex: 20,
+                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                  <div className="text-[10px] uppercase font-bold opacity-80 mb-2 tracking-wider">
-                    {item.news.type === 'hoax' ? 'BERITA HOAX' : 'BERITA ASLI'}
-                  </div>
-                  <div className="font-bold text-sm leading-tight line-clamp-3 drop-shadow-sm">
-                    {item.news.headline}
-                  </div>
+                <div className="text-xs uppercase font-black opacity-90 mb-1 tracking-wider">
+                  {item.news.type === 'hoax' ? 'HOAX' : 'REAL'}
+                </div>
+                {item.news.headline}
               </div>
             ))}
          </div>
