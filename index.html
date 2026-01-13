@@ -31,6 +31,7 @@
                     animation: {
                         'float': 'float 6s ease-in-out infinite',
                         'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'ticker': 'ticker 20s linear infinite',
                     },
                     keyframes: {
                         float: {
@@ -40,6 +41,10 @@
                         popIn: {
                             '0%': { opacity: '0', transform: 'scale(0.5)' },
                             '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        ticker: {
+                            '0%': { transform: 'translateX(100%)' },
+                            '100%': { transform: 'translateX(-100%)' },
                         }
                     }
                 }
