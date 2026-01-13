@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MultiplayerLobby } from './MultiplayerLobby';
 import { GameSelector } from './GameSelector';
 import { MultiplayerQuizView } from './MultiplayerQuizView';
+import { MultiplayerHoaxView } from './MultiplayerHoaxView';
+import { MultiplayerPuzzleView } from './MultiplayerPuzzleView';
 import { MultiplayerScoreboard } from './MultiplayerScoreboard';
 
 interface MultiplayerModeProps {
@@ -70,6 +72,28 @@ export const MultiplayerMode: React.FC<MultiplayerModeProps> = ({ onExit }) => {
     );
   }
 
+  if (gameState === 'hoax') {
+    return (
+      <MultiplayerHoaxView
+        player1Name={player1Name}
+        player2Name={player2Name}
+        timeLimit={timeLimit}
+        onGameEnd={handleGameEnd}
+      />
+    );
+  }
+
+  if (gameState === 'puzzle') {
+    return (
+      <MultiplayerPuzzleView
+        player1Name={player1Name}
+        player2Name={player2Name}
+        timeLimit={timeLimit}
+        onGameEnd={handleGameEnd}
+      />
+    );
+  }
+
   if (gameState === 'scoreboard') {
     return (
       <MultiplayerScoreboard
@@ -84,19 +108,5 @@ export const MultiplayerMode: React.FC<MultiplayerModeProps> = ({ onExit }) => {
     );
   }
 
-  // Placeholder for hoax and puzzle games
-  return (
-    <div className="h-screen bg-gradient-to-br from-news-blue to-news-purple flex items-center justify-center text-white text-center">
-      <div>
-        <p className="text-2xl font-bold mb-4">🚧 {gameMode.toUpperCase()} Game</p>
-        <p className="text-gray-300 mb-4">Coming Soon...</p>
-        <button
-          onClick={onExit}
-          className="bg-white text-news-dark px-6 py-3 rounded-full font-bold hover:bg-gray-100"
-        >
-          Kembali
-        </button>
-      </div>
-    </div>
-  );
+  return null;
 };
