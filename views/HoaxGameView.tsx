@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
-import { NewsItem } from '../types';
+import { NewsItem, User, PlayerStats } from '../types';
 
 interface HoaxGameProps {
+  user: User;
   onExit: () => void;
 }
 
@@ -14,7 +15,7 @@ interface Target {
   left: number; // percentage
 }
 
-export const HoaxGameView: React.FC<HoaxGameProps> = ({ onExit }) => {
+export const HoaxGameView: React.FC<HoaxGameProps> = ({ user, onExit }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -22,6 +23,7 @@ export const HoaxGameView: React.FC<HoaxGameProps> = ({ onExit }) => {
   const [lives, setLives] = useState(3);
   const [targets, setTargets] = useState<Target[]>([]);
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
+  const [hoaxBustedCount, setHoaxBustedCount] = useState(0);
   
   // Refs untuk interval agar bisa di-clear dengan benar
   const timerIntervalRef = useRef<number | null>(null);
@@ -98,13 +100,34 @@ export const HoaxGameView: React.FC<HoaxGameProps> = ({ onExit }) => {
     AudioService.playClick();
   };
 
-  const endGame = () => {
+  const endGame = async () => {
     setIsPlaying(false);
     setGameOver(true);
     setTargets([]); // Clear targets visual
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (spawnerIntervalRef.current) clearInterval(spawnerIntervalRef.current);
     AudioService.playWrong();
+
+    // Save player stats
+    const stats: PlayerStats = {
+      userId: user.id,
+      userName: user.name,
+      school: user.school,
+      totalScore: Math.round(score),
+      quizCompleted: 0,
+      quizCorrect: 0,
+      hoaxBusted: hoaxBustedCount,
+      puzzlesCompleted: 0,
+      writingSubmitted: 0,
+      achievements: [],
+      lastUpdated: Date.now()
+    };
+
+    try {
+      await DataService.savePlayerStats(stats);
+    } catch (error) {
+      console.error("Error saving stats:", error);
+    }
   };
 
   const handleShoot = (target: Target) => {
@@ -114,6 +137,7 @@ export const HoaxGameView: React.FC<HoaxGameProps> = ({ onExit }) => {
     if (target.news.type === 'hoax') {
       AudioService.playShoot();
       setScore(s => s + 100);
+      setHoaxBustedCount(h => h + 1);
     } else {
       AudioService.playWrong();
       setLives(l => {

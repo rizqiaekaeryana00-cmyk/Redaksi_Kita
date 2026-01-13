@@ -66,15 +66,15 @@ export default function App() {
         />
       )}
 
-      {currentView === 'hoax-game' && <HoaxGameView onExit={() => navigate('lobby')} />}
+      {currentView === 'hoax-game' && user && <HoaxGameView user={user} onExit={() => navigate('lobby')} />}
       
       {currentView === 'briefing' && <NewsRoomView onExit={() => navigate('lobby')} />}
       
-      {currentView === 'arena' && <PuzzleView onExit={() => navigate('lobby')} />}
+      {currentView === 'arena' && user && <PuzzleView user={user} onExit={() => navigate('lobby')} />}
       
-      {currentView === 'writing-desk' && <WritingView user={user} onExit={() => navigate('lobby')} />}
+      {currentView === 'writing-desk' && user && <WritingView user={user} onExit={() => navigate('lobby')} />}
       
-      {currentView === 'evaluation' && <QuizView onExit={() => navigate('lobby')} />}
+      {currentView === 'evaluation' && user && <QuizView user={user} onExit={() => navigate('lobby')} />}
 
       {currentView === 'leaderboard' && <LeaderboardView onExit={() => navigate('lobby')} />}
 

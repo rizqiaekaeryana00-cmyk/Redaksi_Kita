@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
-import { QuizQuestion } from '../types';
+import { QuizQuestion, User, PlayerStats } from '../types';
 
-export const QuizView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
+export const QuizView: React.FC<{ user: User; onExit: () => void }> = ({ user, onExit }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
 
   useEffect(() => {
     DataService.getQuiz().then(setQuestions);
@@ -18,6 +19,7 @@ export const QuizView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
     
     if (isCorrect) {
         setScore(s => s + (100 / questions.length));
+        setCorrectCount(c => c + 1);
         AudioService.playCorrect();
     } else {
         AudioService.playWrong();
@@ -28,6 +30,30 @@ export const QuizView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
     } else {
         setFinished(true);
         AudioService.playWin();
+        // Save stats
+        saveStats(correctCount + (isCorrect ? 1 : 0), Math.round(score + (isCorrect ? 100 / questions.length : 0)));
+    }
+  };
+
+  const saveStats = async (correct: number, totalScore: number) => {
+    const stats: PlayerStats = {
+      userId: user.id,
+      userName: user.name,
+      school: user.school,
+      totalScore,
+      quizCompleted: questions.length,
+      quizCorrect: correct,
+      hoaxBusted: 0,
+      puzzlesCompleted: 0,
+      writingSubmitted: 0,
+      achievements: [],
+      lastUpdated: Date.now()
+    };
+
+    try {
+      await DataService.savePlayerStats(stats);
+    } catch (error) {
+      console.error("Error saving quiz stats:", error);
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DataService } from '../services/dataService';
 import { AudioService } from '../services/audioService';
-import { PuzzleLevel } from '../types';
+import { PuzzleLevel, User, PlayerStats } from '../types';
 
 interface PuzzlePiece {
   id: string;
@@ -9,10 +9,11 @@ interface PuzzlePiece {
   correctZone: 'headline' | 'lead' | 'body';
 }
 
-export const PuzzleView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
+export const PuzzleView: React.FC<{ user: User; onExit: () => void }> = ({ user, onExit }) => {
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'finished'>('menu');
   const [difficulty, setDifficulty] = useState<'mudah' | 'sulit'>('mudah');
   const [levels, setLevels] = useState<PuzzleLevel[]>([]);
+  const [solvedCount, setSolvedCount] = useState(0);
   
   // Gameplay State
   const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
@@ -97,8 +98,10 @@ export const PuzzleView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const nextLevel = () => {
     if (currentLevelIdx + 1 < levels.length) {
         setCurrentLevelIdx(curr => curr + 1);
+        setSolvedCount(s => s + 1);
         AudioService.playCorrect();
     } else {
+        setSolvedCount(s => s + 1);
         setGameState('finished');
         AudioService.playWin();
     }
@@ -140,17 +143,41 @@ export const PuzzleView: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   }
 
   if (gameState === 'finished') {
+      const saveStats = async () => {
+        const stats: PlayerStats = {
+          userId: user.id,
+          userName: user.name,
+          school: user.school,
+          totalScore: solvedCount * 100,
+          quizCompleted: 0,
+          quizCorrect: 0,
+          hoaxBusted: 0,
+          puzzlesCompleted: solvedCount,
+          writingSubmitted: 0,
+          achievements: [],
+          lastUpdated: Date.now()
+        };
+
+        try {
+          await DataService.savePlayerStats(stats);
+        } catch (error) {
+          console.error("Error saving puzzle stats:", error);
+        }
+
+        onExit();
+      };
+
       return (
         <div className="flex-1 bg-news-yellow flex items-center justify-center p-4">
             <div className="bg-white p-12 rounded-3xl shadow-2xl text-center max-w-lg w-full animate-pop-in">
                 <i className="fas fa-trophy text-6xl text-news-yellow mb-6"></i>
                 <h2 className="font-display text-4xl font-bold text-gray-800 mb-2">LUAR BIASA!</h2>
-                <p className="text-gray-500 text-lg mb-8">Kamu berhasil menyusun {levels.length} berita dengan sempurna.</p>
+                <p className="text-gray-500 text-lg mb-8">Kamu berhasil menyusun {solvedCount} berita dengan sempurna.</p>
                 <div className="bg-gray-100 p-4 rounded-xl mb-8">
                     <p className="font-bold text-gray-700">Level: <span className="uppercase text-news-blue">{difficulty}</span></p>
                     <p className="font-bold text-gray-700">Status: <span className="text-green-600">KOMPETEN</span></p>
                 </div>
-                <button onClick={onExit} className="bg-news-dark text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-black transition">
+                <button onClick={saveStats} className="bg-news-dark text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-black transition">
                     Kembali ke Redaksi
                 </button>
             </div>
