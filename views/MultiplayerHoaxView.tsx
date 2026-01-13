@@ -213,10 +213,12 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
                    transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-xs uppercase font-black opacity-90 mb-1 tracking-wider">
-                  {item.news.type === 'hoax' ? 'HOAX' : 'REAL'}
+                <div className="text-xs uppercase font-black opacity-90 mb-2 tracking-wider">
+                  {item.news.type === 'hoax' ? '🚨 HOAX' : '✅ REAL'}
                 </div>
-                {item.news.headline}
+                <div className="text-sm leading-tight font-bold">
+                  {item.news.text}
+                </div>
               </div>
             ))}
          </div>
@@ -258,10 +260,12 @@ export const MultiplayerHoaxView: React.FC<MultiplayerHoaxViewProps> = ({
                    transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-xs uppercase font-black opacity-90 mb-1 tracking-wider">
-                  {item.news.type === 'hoax' ? 'HOAX' : 'REAL'}
+                <div className="text-xs uppercase font-black opacity-90 mb-2 tracking-wider">
+                  {item.news.type === 'hoax' ? '🚨 HOAX' : '✅ REAL'}
                 </div>
-                {item.news.headline}
+                <div className="text-sm leading-tight font-bold">
+                  {item.news.text}
+                </div>
               </div>
             ))}
          </div>
